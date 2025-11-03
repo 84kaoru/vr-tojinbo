@@ -451,6 +451,81 @@ export const addCoaster = async (
 
   scene.add(glb.scene);
 
+
+    // ===== 夜空 =====
+  const nightSky = new THREE.Group();
+  nightSky.visible = false; // 夜だけ表示
+  scene.add(nightSky);
+
+  // 星
+  function makeStars(count, radius, size = 1.0, opacity = 0.85) {
+    const geom = new THREE.BufferGeometry();
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      // 球殻上にランダム散布
+      const u = Math.random();
+      const v = Math.random();
+      const theta = 2 * Math.PI * u;
+      const phi = Math.acos(2 * v - 1);
+      const r = radius;
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.cos(phi);
+      const z = r * Math.sin(phi) * Math.sin(theta);
+      if (Math.random() > (y / radius)) continue;
+      pos[i * 3 + 0] = x;
+      pos[i * 3 + 1] = y;
+      pos[i * 3 + 2] = z;
+    }
+    geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+
+    const mat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size,
+      sizeAttenuation: false,  // 遠景でも粒を均一に
+      transparent: true,
+      opacity,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    return new THREE.Points(geom, mat);
+  }
+
+  const starsFar  = makeStars(1600, 295, 0.9, 0.82);
+  const starsNear = makeStars(800,  270, 1.2, 0.75);
+  nightSky.add(starsFar, starsNear);
+
+  // ===== API =====
+  function setSkyBrightness(v) {
+    if (material) {
+      material.color.setScalar(v); // 乗算で暗く
+      material.needsUpdate = true;
+    }
+  }
+
+  function setModelBrightness(v) {
+    obj.traverse((child) => {
+      if (child.isMesh && child.material && child.material.color) {
+        child.material.color.setScalar(v);
+        child.material.needsUpdate = true;
+      }
+    });
+  }
+
+  function setNight(on) {
+    // 空＆モデルの暗さ
+    setSkyBrightness(on ? 0.03 : 1.0);  // 写真が潰れない程度に暗く
+    setModelBrightness(on ? 0.55 : 1.0);
+
+    // ライティングを夜寄りに
+    light.color.set(on ? 0x8899ff : 0xfff0f0);
+    light.groundColor.set(on ? 0x000022 : 0x606066);
+    light.intensity = on ? 0.25 : 1.0;
+
+    // 夜空の表示切替（星は回転/明滅しない）
+    nightSky.visible = on;
+  }
+
   // カスタムレールジオメトリを作成
   {
     // まず、RollerCoasterGeometryは使わず、独自のレールを作成
@@ -835,34 +910,15 @@ export const addCoaster = async (
   }
 
  // === Night / Day 切替関数 ===
-  return {
+    return {
+    light,
     material: material,
     mesh: mesh,
     model: obj,
-
-    setSkyBrightness(v) {
-      if (material) {
-        material.color.setScalar(v);
-        material.needsUpdate = true;
-      }
-    },
-
-    setModelBrightness(v) {
-      // モデル全体を暗くする
-      obj.traverse((child) => {
-        if (child.isMesh && child.material && child.material.color) {
-          child.material.color.setScalar(v);
-          child.material.needsUpdate = true;
-        }
-      });
-    },
-
-    setNight(on) {
-      // 空を暗く
-      this.setSkyBrightness(on ? 0.015 : 1.0);
-      // モデルを暗く
-      this.setModelBrightness(on ? 0.1 : 1.0);
-    },
+    nightSky,
+    setSkyBrightness,
+    setModelBrightness,
+    setNight,
   };
 
 };
