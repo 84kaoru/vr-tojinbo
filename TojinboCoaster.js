@@ -408,6 +408,8 @@ export const addCoaster = async (
   modelurl = "https://code4fukui.github.io/vr-tojinbo/tojinbo-base1.glb",
   modelpos = null,
 ) => {
+  let material = null;
+  let mesh = null;
   if (skyurl) { // sky
     //const url = "https://code4fukui.github.io/vr-fukui/img/vr-tojinbo.jpg";
     const url = skyurl;
@@ -417,8 +419,12 @@ export const addCoaster = async (
     // invert the geometry on the x-axis so that all of the faces point inward
     geometry.scale(-1, 1, 1);
     const texture = new THREE.TextureLoader().load(url);
-    const material = new THREE.MeshBasicMaterial({ map: texture });
-    const mesh = new THREE.Mesh(geometry, material);
+    texture.colorSpace = THREE.SRGBColorSpace; // three.js r150+ の推奨設定
+    material = new THREE.MeshBasicMaterial({ 
+      map: texture,
+      color: new THREE.Color(1, 1, 1) // ← 0.5で半分の明るさ（夜っぽい）
+ });
+    mesh = new THREE.Mesh(geometry, material);
     mesh.rotation.y = Math.PI;
     
     /*
@@ -444,8 +450,6 @@ export const addCoaster = async (
   }
 
   scene.add(glb.scene);
-
-
 
   // カスタムレールジオメトリを作成
   {
@@ -829,5 +833,36 @@ export const addCoaster = async (
       scene.add(rightLight);
     }
   }
+
+ // === Night / Day 切替関数 ===
+  return {
+    material: material,
+    mesh: mesh,
+    model: obj,
+
+    setSkyBrightness(v) {
+      if (material) {
+        material.color.setScalar(v);
+        material.needsUpdate = true;
+      }
+    },
+
+    setModelBrightness(v) {
+      // モデル全体を暗くする
+      obj.traverse((child) => {
+        if (child.isMesh && child.material && child.material.color) {
+          child.material.color.setScalar(v);
+          child.material.needsUpdate = true;
+        }
+      });
+    },
+
+    setNight(on) {
+      // 空を暗く
+      this.setSkyBrightness(on ? 0.015 : 1.0);
+      // モデルを暗く
+      this.setModelBrightness(on ? 0.1 : 1.0);
+    },
+  };
 
 };

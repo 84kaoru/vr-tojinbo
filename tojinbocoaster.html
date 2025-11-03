@@ -165,6 +165,9 @@ document.addEventListener('pointerlockchange', () => {
 	}
 });
 
+const handles = await addCoaster(scene, curve);
+let isNight = false;
+
 // スペースキーで発車/停止を切り替え
 document.addEventListener('keydown', (event) => {
 	if (event.code === 'Space') {
@@ -182,6 +185,14 @@ document.addEventListener('keydown', (event) => {
 			console.log("停止");
 		}
 	}
+
+	// 追加：Nキーで空の明暗トグル
+  	 if (event.code === 'KeyN') {
+    isNight = !isNight;
+    // 画像だけ暗くしたい → handles.setSkyBrightness(isNight ? 0.015 : 1.0);
+    // 光も弱めたい → handles.setNight(isNight);
+    handles.setNight(isNight);
+  	}
 });
 
 renderer.setAnimationLoop(() => {
