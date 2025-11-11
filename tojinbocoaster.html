@@ -219,6 +219,13 @@ renderer.setAnimationLoop(() => {
 	if (coasterState === STATE.RUNNING) {
 		progress += velocity;
 		progress = progress % 1;
+
+		// ゴール直前（progress >= 0.96）で減速
+		const pp = 0.96;
+		if (progress >= pp) {
+			const slowfac = 0.95;
+			velocity = velocity * slowfac;
+		}
 	}
 
 	position.copy(curve.getPointAt(progress));
