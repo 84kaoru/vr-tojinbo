@@ -397,7 +397,7 @@ renderer.setAnimationLoop(() => {
 	if (audionode) {
 		const vp = (velocity - vmin) / (vmax - vmin);
 		const pitch = 1 + vp;
-		const vol = 0.3 + vp * .3;
+		const vol = vp > 0 ? 0.3 + vp * .3 : 0;
 		audionode.setPitchVolume(pitch, vol);
 	}
 });
