@@ -576,7 +576,7 @@ export const addCoaster = async (
     scene.add(leftRailMesh);
     scene.add(rightRailMesh);
     
-    const sleeperURL = '/models/sleeper.glb';
+    const sleeperURL = './models/sleeper.glb';
 
     try {
       const sleepLoader = new PromiseGLTFLoader();
